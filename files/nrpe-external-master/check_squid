@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+# This file is managed by juju.  Do not make local changes.
+
+#
+# check_squid - Nagios check plugin for testing a Squid proxy
+#
+# Christoph Haas (email@christoph-haas.de)
+# License: GPL 2
+#
+# V0.1
+#
+
+use LWP::UserAgent;
+use HTTP::Request::Common qw(POST GET);
+use HTTP::Headers;
+
+my ($url, $urluser, $urlpass, $proxy, $proxyport,
+        $proxyuser, $proxypass, $expectstatus) = @ARGV;
+
+unless ($url && $proxy && $expectstatus)
+{
+        print "Usage: url urluser urlpass proxy proxyport proxyuser proxypass expectstatus\n";
+                                print "  url       -> The URL to check on the internet (http://www.google.com)\n";
+                                print "  urluser   -> Username if the web site required authentication (- = none)\n";
+                                print "  urlpass   -> Password if the web site required authentication (- = none)\n";
+                                print "  proxy     -> Server that squid runs on (proxy.mydomain)\n";
+                                print "  proxyport -> TCP port that Squid listens on (3128)\n";
+                                print "  proxyuser -> Username if the web site required authentication (- = none)\n";
+                                print "  proxypass -> Password if the web site required authentication (- = none)\n";
+                                print "  expectstatus -> HTTP code that should be returned\n";
+                                print "                  (2 = anything that begins with 2)\n";
+        exit -1;
+}
+
+$urluser='' if $urluser eq '-';
+$urlpass='' if $urlpass eq '-';
+$proxyuser='' if $proxyuser eq '-';
+$proxypass='' if $proxypass eq '-';
+
+my $ua = new LWP::UserAgent;
+my $h = HTTP::Headers->new();
+
+if ($proxy)
+{
+        $ua->proxy(['http', 'ftp'], "http://$proxy:$proxyport");
+
+        if ($proxyuser)
+        {
+                $h->proxy_authorization_basic($proxyuser,$proxypass);
+        }
+}
+
+if ($urluser)
+{
+        $h->authorization_basic($urluser, $urlpass);
+}
+
+$req = HTTP::Request->new('GET', $url, $h);
+
+$res = $ua->request($req);
+
+if ($res->status_line =~ /^$expectstatus/)
+{
+        print "OK - Status: ".$res->status_line."\n";
+        exit 0;
+}
+else
+{
+        print "WARNING - Status: ".$res->status_line." (but expected $expectstatus...)\n";
+        exit 1;
+}

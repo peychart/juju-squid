@@ -1,0 +1,67 @@
+http_port {{ config.port }}
+
+acl localhost src 127.0.0.1/32
+acl to_localhost dst 127.0.0.0/8
+acl CONNECT method CONNECT
+acl PURGE method PURGE
+acl proxy_ports myport {{ config.port }}
+
+{% if config.snmp_community %}
+acl snmp_access snmp_community {{ config.snmp_community }}
+{% for source in config.snmp_allowed_ips %}
+acl snmp_source src {{ source }}
+{% if loop.last %}
+snmp_access allow snmp_access snmp_source
+{% endif %}
+{% endfor %}
+snmp_access deny all
+snmp_port 3401
+snmp_incoming_address {{ config.my_ip_address }}
+{% endif %}
+
+logformat combined {{ config.log_format }}
+access_log /var/log/squid3/access.log combined
+
+hosts_file /etc/hosts
+
+coredump_dir {{ config.cache_dir }}
+maximum_object_size {{ config.max_obj_size_kb }} KB
+cache_dir aufs {{ config.cache_dir }} {{ config.cache_size_mb }} {{ config.cache_l1 }} {{ config.cache_l2 }}
+
+cache_mem {{ config.cache_mem_mb }} MB
+
+log_mime_hdrs on
+
+{% for rp in refresh_patterns.keys() -%}
+refresh_pattern {{ rp }} {{ refresh_patterns[rp]['min'] }} {{ refresh_patterns[rp]['percent'] }}% {{ refresh_patterns[rp]['max'] }}
+{% endfor -%}
+refresh_pattern .               30      20%     4320
+
+{% for auth in auth_list -%}
+{% set idx = loop.index -%}
+{% for auth_name in auth.keys() -%} 
+{% for auth_val  in auth[auth_name] -%}
+acl l{{idx}}_{{ auth_name }} {{auth_name}} {{ auth_val }}
+{% endfor -%}
+{% endfor -%}
+http_access allow {% for auth_name in auth.keys() -%} l{{idx}}_{{auth_name}} {% endfor %}
+{% endfor %}
+
+{% for relid in relations.keys() -%}
+{% if relations[relid].sitenames -%}
+{% for sitename in relations[relid].sitenames -%}
+acl {{ relations[relid].name }}_whitelist dstdomain {{ sitename }}
+{% endfor -%}
+acl {{ relations[relid].name}}_from src {{ relations[relid]['private-address'] }}
+http_access allow {{ relations[relid].name }}_from {{ relations[relid].name }}_whitelist
+http_access allow localhost {{ relations[relid].name }}_whitelist
+{% endif -%}
+{% endfor -%}
+
+http_access allow PURGE localhost
+# deny silly methods
+http_access deny PURGE
+http_access deny CONNECT
+http_access deny proxy_ports all
+http_access deny all
+icp_access deny all

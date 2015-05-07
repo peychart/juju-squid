@@ -1,0 +1,80 @@
+options:
+  port:
+    type: int
+    default: 3128
+    description: Squid listening port.
+  log_format:
+    type: string
+    default: '%>a %ui %un [%tl] "%rm %ru HTTP/%rv" %>Hs %<st "%{Referer}>h" "%{User-Agent}>h" %Ss:%Sh'
+    description: Format of the squid log.
+  cache_mem_mb:
+    type: int
+    default: 256
+    description: Maximum size of in-memory object cache (MB). Should be smaller than cache_size_mb.
+  cache_size_mb:
+    type: int
+    default: 512
+    description: Maximum size of the on-disk object cache (MB).
+  cache_dir:
+    type: string
+    default: '/var/spool/squid3'
+    description: The top-level directory where cache swap files will be stored.
+  target_objs_per_dir:
+    type: int
+    default: 400
+    description: Target number of objects to store in L2 directories.
+  avg_obj_size_kb:
+    type: int
+    default: 16
+    description: Estimated average size of a cached object.
+  max_obj_size_kb:
+    type: int
+    default: 8192
+    description: Maximum size of an object to be cached (KB).
+  snmp_community:
+    type: string
+    default: ''
+    description: SNMP community string for monitoring the service.
+  snmp_allowed_ips:
+    # would like to use "regex" here, but it doesn't appear to work
+    type: string
+    default: ''
+    description: Single, or json-formatted list of, IP (with optional subnet mask) allowed to query SNMP.
+    # validator: '[0-9a-zA-z]{6,32}'
+  nagios_context:
+    default: "juju"
+    type: string
+    description: >
+        Used by the nrpe-external-master subordinate charm.
+        A string that will be prepended to instance name to set the host name
+        in nagios. So for instance the hostname would be something like:
+            juju-postgresql-0
+        If you're running multiple environments with the same services in them
+        this allows you to differentiate between them.
+  nagios_check_url:
+    default: "http://www.ubuntu.com"
+    type: string
+    description: >
+       The URL to check squid has access to
+  nagios_service_type:
+     default: "generic"
+     type: string
+     description: >
+        What service this component forms part of e.g. productsearch, uccs etc. Used
+        by nrpe
+  refresh_patterns:
+    type: string
+    default: ''
+    description: >
+      YAML-formatted list of refresh patterns. For example:
+      '{"http://www.ubuntu.com": {min: 0, percent: 20, max: 60}, "http://www.canonical.com": {min: 0, percent: 20, max: 120}}'
+      NOTE: you can use the following oneliner to verify your YAML string:
+            python -c 'import yaml;import sys;print yaml.dump(yaml.load(sys.argv[1]))' '<string>'
+  auth_list:
+    type: string
+    default: ''
+    description: >
+      YAML-formatted list of squid auth dictionaries.  For example:
+      '[{dstdomain: [www.ubuntu.com], src: [1.2.3.4, 5.6.7.0/24]}, {url_regex: ["https?://[^/]+[.]internal(/.*)?"], src: [192.168.0.0/16]}]'
+      NOTE: you can use the following oneliner to verify your YAML string:
+            python -c 'import yaml;import sys;print yaml.dump(yaml.load(sys.argv[1]))' '<string>'
