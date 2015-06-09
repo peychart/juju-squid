@@ -1,10 +1,10 @@
-http_port {{ config.port }}
+http_port $(config.port)
 
 acl localhost src 127.0.0.1/32
 acl to_localhost dst 127.0.0.0/8
 acl CONNECT method CONNECT
 acl PURGE method PURGE
-acl proxy_ports myport {{ config.port }}
+acl proxy_ports myport $(config.port)
 
 {% if config.snmp_community %}
 acl snmp_access snmp_community {{ config.snmp_community }}
@@ -32,14 +32,14 @@ cache_mem {{ config.cache_mem_mb }} MB
 
 log_mime_hdrs on
 
-{% for rp in refresh_patterns.keys() -%}
-refresh_pattern {{ rp }} {{ refresh_patterns[rp]['min'] }} {{ refresh_patterns[rp]['percent'] }}% {{ refresh_patterns[rp]['max'] }}
-{% endfor -%}
+$(for rp in $(refresh_patterns.keys); do \
+echo refresh_pattern $rp $(refresh_patterns $rp min) $(refresh_patterns $rp percent)% $(refresh_patterns $rp max); \
+done)
 refresh_pattern .               30      20%     4320
 
 {% for auth in auth_list -%}
 {% set idx = loop.index -%}
-{% for auth_name in auth.keys() -%} 
+{% for auth_name in auth.keys() -%}
 {% for auth_val  in auth[auth_name] -%}
 acl l{{idx}}_{{ auth_name }} {{auth_name}} {{ auth_val }}
 {% endfor -%}
