@@ -49,8 +49,7 @@ cache_l1() { local r
  r=$(expr $(get_config cache_size_mb) \* 64 )
  r=$(expr $r / $(get_config target_objs_per_dir))
  r=$(expr $r / $(get_config avg_obj_size_kb))
- r=$(expr $r \* $r)
- echo $r
+ expr $r \* $r
 }
 
 apt_get_install() {
