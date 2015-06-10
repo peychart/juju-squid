@@ -1,39 +1,40 @@
-http_port $(config.port)
+http_port $(get_config port || echo 3128)
 
 acl localhost src 127.0.0.1/32
 acl to_localhost dst 127.0.0.0/8
 acl CONNECT method CONNECT
 acl PURGE method PURGE
-acl proxy_ports myport $(config.port)
+acl proxy_ports myport $(get_config port || echo 3128)
 
-{% if config.snmp_community %}
-acl snmp_access snmp_community {{ config.snmp_community }}
-{% for source in config.snmp_allowed_ips %}
-acl snmp_source src {{ source }}
-{% if loop.last %}
-snmp_access allow snmp_access snmp_source
-{% endif %}
-{% endfor %}
-snmp_access deny all
-snmp_port 3401
-snmp_incoming_address {{ config.my_ip_address }}
-{% endif %}
+$(if [ ! -z "$(get_config snmp_community)" ]; then
+echo acl snmp_access snmp_community $(get_config snmp_community)
+v=$(get_config snmp_allowed_ips); n=$(get_json_len "$v")
+i=0; while [ $i -lt $n ]; do
+ echo acl snmp_source src $(echo $v| "get_json" $i| sed -e 's;\\;;g')
+ let "i += 1"
+done;
+[ -z "$(snmp_allowed_ips)" ] || echo snmp_access allow snmp_access snmp_source
+echo snmp_access deny all
+echo snmp_port 3401
+echo snmp_incoming_address $(config.my_ip_address)
+fi)
 
-logformat combined {{ config.log_format }}
+logformat combined $(config.log_format)
 access_log /var/log/squid3/access.log combined
 
 hosts_file /etc/hosts
 
-coredump_dir {{ config.cache_dir }}
-maximum_object_size {{ config.max_obj_size_kb }} KB
-cache_dir aufs {{ config.cache_dir }} {{ config.cache_size_mb }} {{ config.cache_l1 }} {{ config.cache_l2 }}
+coredump_dir $(config.cache_dir)
+maximum_object_size $(config.max_obj_size_kb) KB
+cache_dir aufs $(config.cache_dir) $(config.cache_size_mb) $(config.cache_l1) $(config.cache_l2)
 
-cache_mem {{ config.cache_mem_mb }} MB
+cache_mem $(config.cache_mem_mb) MB
 
 log_mime_hdrs on
 
-$(for rp in $(refresh_patterns.keys); do \
-echo refresh_pattern $rp $(refresh_patterns $rp min) $(refresh_patterns $rp percent)% $(refresh_patterns $rp max); \
+$(v=$(get_config refresh_patterns)
+for rp in $(get_json_keys $v); do
+ echo refresh_pattern $rp $(echo "$v"|get_json $rp min) $(echo "$v"| get_json $rp percent)% $(echo "$v"| get_json $rp max)
 done)
 refresh_pattern .               30      20%     4320
 

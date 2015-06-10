@@ -4,18 +4,23 @@
 set -e
 hook_name=$(basename $(echo $0|grep -v bash))
 hook_name=${hook_name:="hook.sh"}
+cd $(dirname $0)
 mytmp="/tmp/.${hook_name}$(date +%Y%m%d.%H%M%S)"
 trap "rm -f $mytmp" 0 1 2 3 5
 
 default_squid3_config_dir="/etc/squid3"
 default_squid3_config=${default_squid3_config_dir}"/squid.conf"
 default_squid3_config_cache_dir="/var/run/squid3"
-templates_dir="../templates"
 
 DEBUG=1
-
-refresh_patterns=$(config-get 'refresh_patterns' 2>/dev/null || true)
-[ $DEBUG -ne 0 ] && refresh_patterns=${refresh_patterns:='{"http://www.ubuntu.com": {min: 0, percent: 20, max: 60}, "http://www.canonical.com": {min: 0, percent: 20, max: 120}}'}
+config-get() { shift
+ case $1 in
+  snmp_community)	echo "public";;
+  snmp_allowed_ips)	echo '["192.168.10.100", "10.0.0.0/8"]';;
+  refresh_patterns)	echo '{"http://www.ubuntu.com": {min: 0, percent: 20, max: 60}, "http://www.canonical.com": {min: 0, percent: 20, max: 120}}';;
+  *) false
+ esac
+}
 
 ################################################################################
 # Supporting functions
@@ -23,17 +28,17 @@ refresh_patterns=$(config-get 'refresh_patterns' 2>/dev/null || true)
 open_port()    { [ -z "$(which open-port)"  ] || for i in $*; do open-port  $i; done; }
 close_port()   { [ -z "$(which open-close)" ] || for i in $*; do close-port $i; done; }
 format_jshon() { sed -e 's/\([^"A-Za-z]\)\([A-Za-z][A-Za-z]*\):/\1"\2":/g'; }
-config.port()  { local p=$(config-get port || true); echo ${p:="3128"}; }
-
-refresh_patterns.keys() {
- [ -z "$refresh_patterns" ] || echo $refresh_patterns| format_jshon| jshon -k
+get_config()   { config-get '--format=json' $1; }
+service_ports(){ [ -z "$1" ] || egrep -w "http_port" $1| egrep -w "([0-9]+)"; }
+get_json_keys(){ [ -z "$*" ] || echo "$*"| format_jshon| jshon -k; }
+get_json_len() { [ -z "$*" ] || echo "$*"| format_jshon| jshon -l; }
+get_json()     { 
+ [ -z "$*" ] || format_jshon | jshon $(while [ $# -ne 0 ]; do echo "-e $1"; shift; done)
 }
 
-refresh_patterns() {
- [ -z "$refresh_patterns" ] || \
-  echo $refresh_patterns| format_jshon| jshon $(while [ $# -ne 0 ]; do
-   echo "-e $1"; shift
-  done)
+snmp_allowed_ips() { local v n i; v=$(get_config snmp_allowed_ips)
+ n=$(get_json_len "$v")
+ i=0; while [ $i -lt $n ]; do echo $(echo $v| "get_json" $i); let "i += 1"; done
 }
 
 apt_get_install() {
@@ -45,17 +50,17 @@ apt_get_install() {
 # End "Supporting functions"
 ################################################################################
 resource_template() { local dest=$2; [ -z "$2" ] || dest=">$dest"
- <$0 awk '{ if ( $0 ~ /resource_template()/ ) bool=1; if (!bool) print $0 }' >$mytmp
+ <$hook_name awk '{ if ( $0 ~ /resource_template()/ ) bool=1; if (!bool) print $0 }' >$mytmp
  cat >>$mytmp <<EOF
 cat $dest <<@@@
 EOF
- cat >>$mytmp <$templates_dir/$1
+ cat >>$mytmp <../templates/$1
  cat >>$mytmp <<EOF
 @@@
 EOF
- [ $DEBUG -ne 0 ] && less $mytmp
+ [ 0$DEBUG -ne 0 ] && less $mytmp
  $SHELL $mytmp
- [ $DEBUG -ne 0 ] && less $2
+ [ 0$DEBUG -ne 0 ] && less $2
 }
 ################################################################################
 
@@ -66,30 +71,30 @@ EOF
 install_hook() {
  [ -z "$(which jshon)" ] && apt_get_install jshon
  [ -z "$(which jshon)" ] && juju-log "the \"jshon\" command is not installed!" && exit 1
- [ $DEBUG -eq 0 ] && apt_get_install squid
+ [ 0$DEBUG -eq 0 ] && apt_get_install squid
  resource_template "main_config.template" "/tmp/squid.conf"
 }
 
 config_changed() {
- echo;
+ echo
 }
 
 start_hook() {
- echo;
+ echo
 }
 
 stop_hook() {
- echo;
+ echo
 }
 
 proxy_interface() {
- echo;
+ echo
 }
 
 ################################################################################
 # Main section
 ################################################################################
-[ $DEBUG -ne 0 ] && install_hook
+[ 0$DEBUG -ne 0 ] && install_hook
 
 case $hook_name in
  "install")
