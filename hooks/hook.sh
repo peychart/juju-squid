@@ -52,12 +52,6 @@ cache_l1() { local r
  expr $r \* $r
 }
 
-auth_list_parser() { local v=$(cat)
- for i in $(seq 0 $(get_config auth_list)); do
-  echo $i
- done
-}
-
 apt_get_install() {
  juju-log "installing packages"
  DEBIAN_FRONTEND=noninteractive apt-get -y install $*
