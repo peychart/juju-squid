@@ -16,19 +16,19 @@ done;
 [ $n -ne 0 ] && echo snmp_access allow snmp_access snmp_source
 echo snmp_access deny all
 echo snmp_port 3401
-echo snmp_incoming_address $(config.my_ip_address)
+echo snmp_incoming_address $(get_config my_ip_address)
 fi)
 
-logformat combined $(config.log_format)
+logformat combined $(get_config log_format)
 access_log /var/log/squid3/access.log combined
 
 hosts_file /etc/hosts
 
-coredump_dir $(config.cache_dir)
-maximum_object_size $(config.max_obj_size_kb) KB
-cache_dir aufs $(config.cache_dir) $(config.cache_size_mb) $(config.cache_l1) $(config.cache_l2)
+coredump_dir $(get_config cache_dir)
+maximum_object_size $(get_config max_obj_size_kb) KB
+cache_dir aufs $(get_config cache_dir) $(get_config cache_size_mb) $(cache_l1) $(expr $(cache_l1) \* 16)
 
-cache_mem $(config.cache_mem_mb) MB
+cache_mem $(get_config cache_mem_mb) MB
 
 log_mime_hdrs on
 
