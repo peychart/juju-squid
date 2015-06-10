@@ -13,7 +13,7 @@ i=0; while [ $i -lt $n ]; do
  echo acl snmp_source src $(echo $v| "get_json" $i| sed -e 's;\\;;g')
  let "i += 1"
 done;
-[ -z "$(snmp_allowed_ips)" ] || echo snmp_access allow snmp_access snmp_source
+[ $n -ne 0 ] && echo snmp_access allow snmp_access snmp_source
 echo snmp_access deny all
 echo snmp_port 3401
 echo snmp_incoming_address $(config.my_ip_address)

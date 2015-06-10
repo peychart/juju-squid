@@ -33,12 +33,7 @@ service_ports(){ [ -z "$1" ] || egrep -w "http_port" $1| egrep -w "([0-9]+)"; }
 get_json_keys(){ [ -z "$*" ] || echo "$*"| format_jshon| jshon -k; }
 get_json_len() { [ -z "$*" ] || echo "$*"| format_jshon| jshon -l; }
 get_json()     { 
- [ -z "$*" ] || format_jshon | jshon $(while [ $# -ne 0 ]; do echo "-e $1"; shift; done)
-}
-
-snmp_allowed_ips() { local v n i; v=$(get_config snmp_allowed_ips)
- n=$(get_json_len "$v")
- i=0; while [ $i -lt $n ]; do echo $(echo $v| "get_json" $i); let "i += 1"; done
+ [ -z "$*" ] || format_jshon| jshon $(while [ $# -ne 0 ]; do echo "-e $1"; shift; done)
 }
 
 apt_get_install() {
