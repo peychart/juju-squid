@@ -8,11 +8,10 @@ acl proxy_ports myport $(get_config port || echo 3128)
 
 $(if [ ! -z "$(get_config snmp_community)" ]; then
 echo acl snmp_access snmp_community $(get_config snmp_community)
-v=$(get_config snmp_allowed_ips); n=$(get_json_len "$v")
-i=0; while [ $i -lt $n ]; do
- echo acl snmp_source src $(echo $v| "get_json" $i| sed -e 's;\\;;g')
- let "i += 1"
-done;
+n=$(get_config snmp_allowed_ips| get_json_len)
+for i in $(seq 0 $(expr $n - 1)); do
+ echo acl snmp_source src $(get_config snmp_allowed_ips| get_json $i)
+done
 [ $n -ne 0 ] && echo snmp_access allow snmp_access snmp_source
 echo snmp_access deny all
 echo snmp_port 3401
@@ -32,21 +31,21 @@ cache_mem $(get_config cache_mem_mb) MB
 
 log_mime_hdrs on
 
-$(v=$(get_config refresh_patterns)
-for rp in $(get_json_keys $v); do
- echo refresh_pattern $rp $(echo "$v"|get_json $rp min) $(echo "$v"| get_json $rp percent)% $(echo "$v"| get_json $rp max)
+$(for rp in $(echo "$v"| get_json_keys); do
+ echo refresh_pattern $rp $(get_config refresh_patterns| get_json $rp min) $(get_config refresh_patterns| get_json $rp percent)% $(get_config refresh_patterns| get_json $rp max)
 done)
 refresh_pattern .               30      20%     4320
 
-{% for auth in auth_list -%}
-{% set idx = loop.index -%}
-{% for auth_name in auth.keys() -%}
-{% for auth_val  in auth[auth_name] -%}
-acl l{{idx}}_{{ auth_name }} {{auth_name}} {{ auth_val }}
-{% endfor -%}
-{% endfor -%}
-http_access allow {% for auth_name in auth.keys() -%} l{{idx}}_{{auth_name}} {% endfor %}
-{% endfor %}
+$(for i in $(seq 0 $(expr $(get_config auth_list| get_json_len) - 1)); do
+ list=""
+ for j in $(get_config auth_list| get_json $i| get_json_keys); do
+  for k in $(seq 0 $(expr $(get_config auth_list| get_json $i $j| get_json_len) - 1)); do
+   echo acl l${i}_$j $j $(get_config auth_list| get_json $i $j $k)
+  done
+  list="$list l${i}_$j"
+ done
+ echo http_access allow $list
+done)
 
 {% for relid in relations.keys() -%}
 {% if relations[relid].sitenames -%}
