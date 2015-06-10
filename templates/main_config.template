@@ -6,6 +6,7 @@ acl CONNECT method CONNECT
 acl PURGE method PURGE
 acl proxy_ports myport $(get_config port || echo 3128)
 
+################################# snmp config:
 $(if [ ! -z "$(get_config snmp_community)" ]; then
 echo acl snmp_access snmp_community $(get_config snmp_community)
 n=$(get_config snmp_allowed_ips| get_json_len)
@@ -17,6 +18,7 @@ echo snmp_access deny all
 echo snmp_port 3401
 echo snmp_incoming_address $(get_config my_ip_address)
 fi)
+# ---
 
 logformat combined $(get_config log_format)
 access_log /var/log/squid3/access.log combined
@@ -31,11 +33,14 @@ cache_mem $(get_config cache_mem_mb) MB
 
 log_mime_hdrs on
 
-$(for rp in $(echo "$v"| get_json_keys); do
+################################# refresh_patterns config:
+$(for rp in $(get_config refresh_patterns| get_json_keys); do
  echo refresh_pattern $rp $(get_config refresh_patterns| get_json $rp min) $(get_config refresh_patterns| get_json $rp percent)% $(get_config refresh_patterns| get_json $rp max)
 done)
 refresh_pattern .               30      20%     4320
+# ---
 
+################################# auth config:
 $(for i in $(seq 0 $(expr $(get_config auth_list| get_json_len) - 1)); do
  list=""
  for j in $(get_config auth_list| get_json $i| get_json_keys); do
@@ -46,7 +51,9 @@ $(for i in $(seq 0 $(expr $(get_config auth_list| get_json_len) - 1)); do
  done
  echo http_access allow $list
 done)
+# ---
 
+################################# 
 {% for relid in relations.keys() -%}
 {% if relations[relid].sitenames -%}
 {% for sitename in relations[relid].sitenames -%}
@@ -57,6 +64,7 @@ http_access allow {{ relations[relid].name }}_from {{ relations[relid].name }}_w
 http_access allow localhost {{ relations[relid].name }}_whitelist
 {% endif -%}
 {% endfor -%}
+# ---
 
 http_access allow PURGE localhost
 # deny silly methods

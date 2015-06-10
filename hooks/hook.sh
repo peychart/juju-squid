@@ -33,7 +33,7 @@ config-get() { shift
 # End JUJU ENV (to comment)
 
 ################################################################################
-# Supporting functions
+# Supporting functions in templates
 ################################################################################
 open_port()    { [ -z "$(which open-port)"  ] || for i in $*; do open-port  $i; done; }
 close_port()   { [ -z "$(which open-close)" ] || for i in $*; do close-port $i; done; }
@@ -52,12 +52,6 @@ cache_l1() { local r
  expr $r \* $r
 }
 
-apt_get_install() {
- juju-log "installing packages"
- DEBIAN_FRONTEND=noninteractive apt-get -y install $*
-}
-
-################################################################################
 # End "Supporting functions"
 ################################################################################
 resource_template() {
@@ -69,22 +63,27 @@ resource_template() {
  $SHELL $mytmp
  [ 0$DEBUG -ne 0 ] && less $2
 }
-################################################################################
 
 
 ################################################################################
 # Hook functions
 ################################################################################
 install_hook() {
- [ -z "$(which jshon)" ] && apt_get_install jshon
+ [ -z "$(which jshon)" ] \
+   && juju-log "installing packages" \
+   && DEBIAN_FRONTEND=noninteractive apt_get -y install jshon
  [ -z "$(which jshon)" ] && juju-log "the \"jshon\" command is not installed!" && exit 1
- [ 0$DEBUG -eq 0 ] && apt_get_install squid
+
+ [ 0$DEBUG -eq 0 ] \
+   && juju-log "installing packages" \
+   && DEBIAN_FRONTEND=noninteractive apt_get -y install squid
 
  [ -d $default_squid3_config_dir ] || mkdir -p $default_squid3_config_dir
  [ ! -e $default_squid3_config ] || \
    cp -pf $default_squid3_config $default_squid3_config.$(date +%y%m%d.%H%M%S)
  resource_template "main_config.template" $default_squid3_config
 }
+[ 0$DEBUG -ne 0 ] && install_hook
 
 config_changed() {
  echo
@@ -105,9 +104,7 @@ proxy_interface() {
 ################################################################################
 # Main section
 ################################################################################
-[ 0$DEBUG -ne 0 ] && install_hook
-
-case $hook_name in
+case "$hook_name" in
  "install")
 	install_hook			;;
  "config-changed")
