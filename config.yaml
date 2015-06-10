@@ -67,7 +67,7 @@ options:
     default: ''
     description: >
       YAML-formatted list of refresh patterns. For example:
-      '{"http://www.ubuntu.com": {min: 0, percent: 20, max: 60}, "http://www.canonical.com": {min: 0, percent: 20, max: 120}}'
+      '{"http://www.ubuntu.com": {"min": 0, "percent": 20, "max": 60}, "http://www.canonical.com": {"min": 0, "percent": 20, "max": 120}}'
       NOTE: you can use the following oneliner to verify your YAML string:
             python -c 'import yaml;import sys;print yaml.dump(yaml.load(sys.argv[1]))' '<string>'
   auth_list:
@@ -75,6 +75,6 @@ options:
     default: ''
     description: >
       YAML-formatted list of squid auth dictionaries.  For example:
-      '[{dstdomain: [www.ubuntu.com], src: [1.2.3.4, 5.6.7.0/24]}, {url_regex: ["https?://[^/]+[.]internal(/.*)?"], src: [192.168.0.0/16]}]'
+      '[{"dstdomain": ["www.ubuntu.com"], "src": ["1.2.3.4, 5.6.7.0/24"]}, {"url_regex": ["https?://[^/]+[.]internal(/.*)?"], "src": ["192.168.0.0/16"]}]'
       NOTE: you can use the following oneliner to verify your YAML string:
             python -c 'import yaml;import sys;print yaml.dump(yaml.load(sys.argv[1]))' '<string>'
