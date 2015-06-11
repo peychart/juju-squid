@@ -19,4 +19,4 @@ relation_set() { local a b;
 }
 unit_get()     { unit-get $*; }
 get_unit_hostname() { hostname; }
-get_host_ip()  { dig +short $(hostname); }
+get_host_ip()  { dig +short $(hostname).$(dnsdomainname); }

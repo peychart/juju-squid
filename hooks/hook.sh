@@ -73,6 +73,28 @@ resource_template() {
 ################################################################################
 source ./utils.sh
 
+relation_json() { # $0 scope unit_name relation_id
+ local a
+ [ -z "$3" ] || a="-r $3"; if [ -z "$1" ]; then a="$a -"; else a="$a $1"; fi
+ relation-get --format=json $a $2
+}
+
+relation_ids() { # $0 relation_type
+ local reltype reltypes
+ reltypes=( $* )
+ for reltype in ${reltypes[@]}; do
+  relation-ids --format=json $reltype
+ done
+}
+
+relation_get_all() { local reldata relid unit
+ for relid in $(relation_ids| get_json_keys); do
+  for unit in $(seq 0 $(expr $(relation-list --format=json -r $relid| get_json_lena) - 1)); do
+   relation-list --format=json -r $relid| get_json $unit
+  done
+ done
+}
+
 install_hook() {
  [ -z "$(which jshon)" ] \
    && juju_log "installing packages" \

@@ -1,4 +1,4 @@
-name: squid-forwardproxy
+name: squid-sh
 summary: Full featured Web Proxy cache (HTTP proxy)
 maintainer: "Alexander List <alexander.list@canonical.com>"
 description: >
