@@ -33,7 +33,7 @@ config-get() { shift
  esac
 }
 # End JUJU ENV (to comment)
-############################### TO REMOVE ######################################
+############################### END "TO REMOVE" ######################################
 
 ################################################################################
 # Supporting functions in templates
@@ -64,7 +64,7 @@ resource_template() {
  echo "@@@" >>$mytmp
  [ 0$DEBUG -ne 0 ] && less $mytmp
  $SHELL $mytmp
- [ 0$DEBUG -ne 0 ] && less $2
+ [ 0$DEBUG -ne 0 -a ! -z "$2" ] && less $2
 }
 
 
@@ -84,6 +84,7 @@ install_hook() {
  [ -d $default_squid3_config_dir ] || mkdir -p $default_squid3_config_dir
  [ ! -e $default_squid3_config ] || \
    cp -pf $default_squid3_config $default_squid3_config.$(date +%y%m%d.%H%M%S)
+
  resource_template "main_config.template" $default_squid3_config
 }
 [ 0$DEBUG -ne 0 ] && install_hook
@@ -128,6 +129,5 @@ case "$hook_name" in
 	update_nrpe_checks		;;
  "env-dump")
 	echo relation_get_all		;;
- *)	echo "Unknown hook"
-	exit 1
+ *)	echo "Unknown hook" && false
 esac
