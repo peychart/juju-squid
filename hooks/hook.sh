@@ -12,7 +12,9 @@ default_squid3_config_dir="/etc/squid3"
 default_squid3_config=${default_squid3_config_dir}"/squid.conf"
 default_squid3_config_cache_dir="/var/run/squid3"
 
+############################### TO REMOVE ######################################
 DEBUG=1
+nop() { echo -e "\c"; }
 # JUJU ENV... (to comment)
 config-get() { shift
  case $1 in
@@ -31,6 +33,7 @@ config-get() { shift
  esac
 }
 # End JUJU ENV (to comment)
+############################### TO REMOVE ######################################
 
 ################################################################################
 # Supporting functions in templates
@@ -86,19 +89,19 @@ install_hook() {
 [ 0$DEBUG -ne 0 ] && install_hook
 
 config_changed() {
- echo
+ nop
 }
 
 start_hook() {
- echo
+ nop
 }
 
 stop_hook() {
- echo
+ nop
 }
 
 proxy_interface() {
- echo
+ nop
 }
 
 ################################################################################
