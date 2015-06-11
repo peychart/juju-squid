@@ -4,6 +4,7 @@
 set -e
 hook_name=$(basename $(echo $0| grep -v bash))
 hook_name=${hook_name:="hook.sh"}
+TEMPLATES_DIR='templates'
 cd $(dirname $0)
 mytmp="/tmp/.${hook_name}$(date +%Y%m%d.%H%M%S)"
 trap "rm -f $mytmp" 0 1 2 3 5
@@ -33,7 +34,7 @@ config-get() { shift
  esac
 }
 # End JUJU ENV (to comment)
-############################### END "TO REMOVE" ######################################
+############################### END "TO REMOVE" ################################
 
 ################################################################################
 # Supporting functions in templates
@@ -60,25 +61,26 @@ cache_l1() { local r
 resource_template() {
  <$hook_name awk '{ if ( $0 ~ /resource_template()/ ) bool=1; if (!bool) print $0 }' >$mytmp
  echo "cat $([ -z "$2" ] || echo '>')$2 <<@@@" >>$mytmp
- cat >>$mytmp <../templates/$1
+ cat >>$mytmp <../$TEMPLATES_DIR/$1
  echo "@@@" >>$mytmp
  [ 0$DEBUG -ne 0 ] && less $mytmp
  $SHELL $mytmp
  [ 0$DEBUG -ne 0 -a ! -z "$2" ] && less $2
 }
 
-
 ################################################################################
 # Hook functions
 ################################################################################
+source ./utils.sh
+
 install_hook() {
  [ -z "$(which jshon)" ] \
-   && juju-log "installing packages" \
+   && juju_log "installing packages" \
    && DEBIAN_FRONTEND=noninteractive apt_get -y install jshon
- [ -z "$(which jshon)" ] && juju-log "the \"jshon\" command is not installed!" && exit 1
+ [ -z "$(which jshon)" ] && juju_log "the \"jshon\" command is not installed!" && exit 1
 
  [ 0$DEBUG -eq 0 ] \
-   && juju-log "installing packages" \
+   && juju_log "installing packages" \
    && DEBIAN_FRONTEND=noninteractive apt_get -y install squid
 
  [ -d $default_squid3_config_dir ] || mkdir -p $default_squid3_config_dir
