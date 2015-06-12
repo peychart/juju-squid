@@ -7,7 +7,7 @@ acl PURGE method PURGE
 acl proxy_ports myport $(get_config port || echo 3128)
 
 ################################# snmp config:
-$(if [ ! -z "$(get_config snmp_community)" ]; then
+$(if [ ! -z $(get_config snmp_community) ]; then
 echo acl snmp_access snmp_community $(get_config snmp_community)
 n=$(get_config snmp_allowed_ips| get_json_len)
 for i in $(seq 0 $(expr $n - 1)); do

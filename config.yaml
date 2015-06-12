@@ -64,7 +64,7 @@ options:
         by nrpe
   refresh_patterns:
     type: string
-    default: ''
+    default: '{"http://www.ubuntu.com": {"min": 0, "percent": 20, "max": 60}, "http://www.canonical.com": {"min": 0, "percent": 20, "max": 120}}'
     description: >
       YAML-formatted list of refresh patterns. For example:
       '{"http://www.ubuntu.com": {"min": 0, "percent": 20, "max": 60}, "http://www.canonical.com": {"min": 0, "percent": 20, "max": 120}}'
