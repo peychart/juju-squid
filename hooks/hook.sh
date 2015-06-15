@@ -2,10 +2,9 @@
 # 201506-Philippe.eychart@informatique.gov.pf
 # licence GNU-v3
 set -e
-hook_name=$(basename $(echo $0| grep -v bash))
-hook_name=${hook_name:="hook.sh"}
+hook_name=$(basename $(echo $0| sed -e 's;.* ;;'))
+dirname=$(dirname $(echo $0| sed -e 's;.* ;;'))
 TEMPLATES_DIR='templates'
-cd $(dirname $0)
 mytmp="/tmp/.${hook_name}$(date +%Y%m%d.%H%M%S)"
 trap "rm -f $mytmp" 0 1 2 3 5
 
@@ -29,7 +28,7 @@ get_json_len() { jshon -l || true; }
 get_json()     { #Syntaxe: echo <String>| get_json <key>  # cf. man jshon
  [ -z "$*" ] || jshon $(while [ $# -ne 0 ]; do echo "-e $1"; shift; done)| sed -e 's;\\/;/;g' -e 's/^"//' -e 's/"$//'
 }
-get_config()   { config-get '--format=json'| get_json $1; }
+get_config()   { config-get $*; }
 
 cache_l1() { local r
  r=$(expr $(get_config cache_size_mb) \* 64 )
@@ -41,9 +40,9 @@ cache_l1() { local r
 # End "Supporting functions"
 ################################################################################
 resource_template() {
- <$hook_name awk '{ if ( $0 ~ /resource_template()/ ) bool=1; if (!bool) print $0 }' >$mytmp
+ <$dirname/$hook_name awk '{ if ( $0 ~ /resource_template()/ ) bool=1; if (!bool) print $0 }' >$mytmp
  echo "cat $([ -z "$2" ] || echo '>')$2 <<@@@" >>$mytmp
- cat >>$mytmp <../$TEMPLATES_DIR/$1
+ cat >>$mytmp <$dirname/../$TEMPLATES_DIR/$1
  echo "@@@" >>$mytmp
  [ 0$DEBUG -ne 0 ] && less $mytmp
  $SHELL $mytmp
@@ -53,7 +52,7 @@ resource_template() {
 ################################################################################
 # Hook functions
 ################################################################################
-source ./utils.sh
+source $dirname/utils.sh
 
 relation_json() { # $0 scope unit_name relation_id
  local a
