@@ -12,10 +12,7 @@ default_squid3_config_dir="/etc/squid3"
 default_squid3_config=${default_squid3_config_dir}"/squid.conf"
 default_squid3_config_cache_dir="/var/run/squid3"
 
-############################### TO REMOVE ######################################
 DEBUG=0
-nop() { echo -e "\c"; }
-############################### END "TO REMOVE" ################################
 
 ################################################################################
 # Supporting functions in templates
@@ -44,9 +41,9 @@ resource_template() {
  echo "cat $([ -z "$2" ] || echo '>')$2 <<@@@" >>$mytmp
  cat >>$mytmp <$dirname/../$TEMPLATES_DIR/$1
  echo "@@@" >>$mytmp
- [ 0$DEBUG -ne 0 ] && less $mytmp
+ [ 0$DEBUG -eq 0 ] || less $mytmp
  $SHELL $mytmp
- [ 0$DEBUG -ne 0 -a ! -z "$2" ] && less $2
+ [ 0$DEBUG -eq 0 ] || less $2
 }
 
 ################################################################################
@@ -76,63 +73,99 @@ relation_get_all() { local reldata relid unit
  done
 }
 
-install_hook() {
- [ -z "$(which jshon)" ] \
-   && juju_log "installing packages" \
-   && DEBIAN_FRONTEND=noninteractive apt-get -y install jshon
- [ -z "$(which jshon)" ] && juju_log "the \"jshon\" command is not installed!" && exit 1
+service_squid3() {
+ echo -s "\c"
+}
 
- [ 0$DEBUG -eq 0 ] \
-   && juju_log "installing packages" \
-   && DEBIAN_FRONTEND=noninteractive apt-get -y install squid
+update_service_ports() {
+ echo -s "\c"
+}
 
+construct_squid3_config() {
  [ -d $default_squid3_config_dir ] || mkdir -p $default_squid3_config_dir
  [ ! -e $default_squid3_config ] || \
    cp -pf $default_squid3_config $default_squid3_config.$(date +%y%m%d.%H%M%S)
 
  resource_template "main_config.template" $default_squid3_config
 }
-[ 0$DEBUG -ne 0 ] && install_hook
+
+install_hook() {
+ [ -z "$(which jshon)" ] \
+   && juju_log "installing packages" \
+   && DEBIAN_FRONTEND=noninteractive apt-get -y install jshon
+ [ -z "$(which jshon)" ] && juju_log "the \"jshon\" command is not installed!" && exit 1
+
+ juju_log "installing packages squid3" \
+   && DEBIAN_FRONTEND=noninteractive apt-get -y install squid
+
+ construct_squid3_config
+}
+
+get_service_ports() {
+ egrep -w "[^#]*http_port[ \t]+([0-9]+)" $default_squid3_config| sed -s 's/.*http_port[ \t]*//'
+}
 
 config_changed() {
- nop
+ current_service_ports=$(get_service_ports)
+ construct_squid3_config
+
+ if service_squid3 'check'; then
+  updated_service_ports=$(get_service_ports)
+  update_service_ports current_service_ports updated_service_ports
+  service_squid3 'reload'
+ else
+  false
+ fi
 }
 
 start_hook() {
- nop
+ if service squid2 status; then
+  service squid2 restart
+ else
+  service squid2 start
+ fi
 }
 
 stop_hook() {
- nop
+ service squid2 status \
+  && service squid2 stop
 }
 
 proxy_interface() {
- nop
+ case "$1" in
+  'joined'|'changed'|'broken'|'departed')
+   s=$(get_service_ports)
+   if [ ! -z "$s" ]; then
+    set $s
+    relation-set port=$1
+   fi
+   config_changed
+ esac
 }
 
 ################################################################################
 # Main section
 ################################################################################
 case "$hook_name" in
- "install")
+ 'install')
 	install_hook			;;
- "config-changed")
+ 'config-changed')
 	config_changed			;;
- "start")
+ 'start')
 	start_hook			;;
- "stop")
+ 'stop')
 	stop_hook			;;
- "cached-website-relation-joined")
-	proxy_interface "joined"	;;
- "cached-website-relation-changed")
-	proxy_interface "changed"	;;
- "cached-website-relation-broken")
-	proxy_interface "broken"	;;
- "cached-website-relation-departed")
-	proxy_interface "departed"	;;
- "nrpe-external-master-relation-changed")
+ 'cached-website-relation-joined')
+	proxy_interface 'joined'	;;
+ 'cached-website-relation-changed')
+	proxy_interface 'changed'	;;
+ 'cached-website-relation-broken')
+	proxy_interface 'broken'	;;
+ 'cached-website-relation-departed')
+	proxy_interface 'departed'	;;
+ 'nrpe-external-master-relation-changed')
 	update_nrpe_checks		;;
- "env-dump")
+ 'env-dump')
 	echo relation_get_all		;;
  *)	echo "Unknown hook" && false
 esac
